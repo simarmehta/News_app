@@ -1,0 +1,209 @@
+
+import 'dart:ui';
+
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:news_app/Content/data.dart';
+import 'package:news_app/Content/news.dart';
+import 'package:news_app/app%20screen/articlescreen.dart';
+import 'package:news_app/app%20screen/categoryscreen.dart';
+import 'package:news_app/model/articlemodel.dart';
+import 'package:news_app/model/categorymodel.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+
+  List<CategoryModel> category= <CategoryModel>[];
+  List<ArticleModel> articles = <ArticleModel>[];
+  bool _loading =true;
+  var refreshKey = GlobalKey<RefreshIndicatorState>();
+
+
+  @override
+  void initState() {
+
+    // TODO: implement initState
+    super.initState();
+    category= getCategory();
+    getNews();
+    refreshList();
+
+  }
+
+  Future<dynamic> refreshList() async {
+    refreshKey.currentState?.show(atTop: false);
+    await Future.delayed(Duration(seconds: 2));
+
+    setState(() {
+      _loading=true;
+    });
+    return getNews();
+  }
+
+  getNews() async{
+    News newsC= News();
+    await newsC.getNews();
+    articles=newsC.news;
+    setState(() {
+      _loading =false;
+    });
+
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.blueAccent,
+        title: Row(
+
+          children: [
+            Text("The Today News",style: TextStyle(
+              fontWeight: FontWeight.w700,fontStyle: FontStyle.italic),
+            ),
+          ],
+        ),
+        elevation: 1.0,
+      ),
+      body:_loading ? Center(
+
+        child: Container(
+          child: CircularProgressIndicator(),
+        ),
+      ) : RefreshIndicator(
+        key: refreshKey,
+        onRefresh: refreshList,
+        child: SingleChildScrollView(
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16,vertical: 10),
+                child: Column(
+                  children: [
+
+                    ///Category TAB
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6),
+                      height:125,
+                      width: 500,
+                      child: ListView.builder(
+                          itemCount: category.length,
+                          shrinkWrap:true,
+                    scrollDirection: Axis.horizontal,
+                    itemBuilder:(context, index){
+                        return Category(
+                          imgUrl: category[index].imgUrl,
+                          categoryName: category[index].categoryName,
+                        );
+                          }),
+
+                    ),
+                    ///News Tab
+                    Container(
+                      padding: EdgeInsets.only(top:16),
+                       child: ListView.builder(
+                            itemCount: articles.length,
+                            shrinkWrap: true,
+                            physics: ClampingScrollPhysics(),
+                            itemBuilder: (context, index){
+                              return NewsTile(imgUrl: articles[index].urlToImage ,
+                                  title: articles[index].title,
+                                  desc: articles[index].description,
+                                url: articles[index].url,
+
+
+                              );
+                            }),
+
+                      ),
+                  ],
+                ),
+
+              ),
+            ),
+      ),
+        );
+  }
+}
+
+class Category extends StatelessWidget {
+final imgUrl,categoryName;
+Category({this.imgUrl,this.categoryName});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: (){
+        Navigator.push(context, MaterialPageRoute(
+            builder: (context) => CategoryScreen(category: categoryName.toLowerCase(),))
+        );
+      },
+      child: Container(
+
+        margin: EdgeInsets.only(right:16),
+        child: Stack(
+          children: [
+            ClipRRect(
+                borderRadius:BorderRadius.circular(6),
+                child: Image.network(imgUrl,width: 200,height: 135,fit: BoxFit.cover,)),
+          Container(
+            alignment: Alignment.center,
+            width: 200,height: 135,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(6),
+              color: Colors.black26,
+            ),
+            child: Text(categoryName,style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),),
+          )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class NewsTile extends StatelessWidget {
+  late final String imgUrl, title, desc,url;
+
+  NewsTile({required this.imgUrl,required this.title,required this.desc,required this.url});
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap:(){
+        Navigator.push(context, MaterialPageRoute(
+            builder: (context) => ArticleScreen(newsUrl: url,))
+        );
+      } ,
+      child: Container(
+        margin: EdgeInsets.only(bottom:16),
+        child: Column(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+                child: Image.network(imgUrl)),
+            SizedBox(height: 4,),
+            Text(title,style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500
+            ),),
+            SizedBox(height: 8,),
+            Text(desc,style: TextStyle(
+              color: Colors.black38
+            ),),
+
+
+          ],
+        ),
+      ),
+    );
+  }
+  }
+
